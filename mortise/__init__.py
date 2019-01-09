@@ -1,6 +1,8 @@
 from mortise.mortise import *
+from mortise import testing
 
 __all__ = [
+    testing,
     StateRetryLimitError,
     StateMachineComplete,
     MissingOnStateHandler,
