@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+""" Example for blocking state machine that waits for correct message before
+    moving onto the next state. Also shows an example of using local state
+    values that are reset when the state is re-initialized. """
+
 import queue
 import random
 import threading
@@ -10,40 +14,60 @@ from mortise import State
 
 
 class Foo(State):
+    """ Foo state keeps count of all "foo" messages it sees and prints out
+        the current count. When it sees a "bar" message transitions to Bar
+        state. All other messages are ignored and trapped."""
     def on_enter(self, st):
+        # Re-initializes Foo count
         self.count = 0
 
     def on_state(self, st):
         if st.msg:
             print("Foo: ", st.msg['data'])
             if st.msg['data'] == 'bar':
+                # Transition to Bar
                 return Bar
             elif st.msg['data'] == 'foo':
                 self.count += 1
                 print("Foos: {}".format(self.count))
+                # "Swallow" current message (don't trap it)
                 return True
 
+            # Otherwise return nothing which will trap messages
+
     def on_leave(self, st):
+        print("Leaving Foo")
         if st.msg and st.msg['data'] == 'foo':
+            # Will never be raised because returning True won't trigger
+            # the on_leave handler
             raise Exception("Called on_leave when shouldn't have")
 
 
 class Bar(State):
-    def on_enter(self, st):
-        self.count = 0
-
+    """ Bar state keeps count of all "bar" messages it sees and prints out
+        the current count. When it sees a "foo" message transitions to Foo
+        state. All other messages are ignored and trapped."""
     def on_state(self, st):
         if st.msg:
             print("Pong: ", st.msg['data'])
             if st.msg['data'] == 'foo':
+                # Transition to Foo
                 return Foo
             elif st.msg['data'] == 'bar':
-                self.count += 1
-                print("Bars: {}".format(self.count))
+                # Count kept in shared state that will persist between state
+                # transitions unlike Foo
+                st.common.bars += 1
+                print("Bars: {}".format(st.common.bars))
+                # Remain in Bar state (don't trap message)
                 return True
 
+            # Otherwise remain in Bar and trap ignored message
+
     def on_leave(self, st):
+        print("Leaving Bar")
         if st.msg and st.msg['data'] == 'bar':
+            # Will never be raised because returning True won't trigger
+            # the on_leave handler
             raise Exception("Called on_leave when shouldn't have")
 
 
@@ -53,9 +77,18 @@ class ErrorState(State):
 
 
 def trap_msg(st):
+    """ Function the state machine calls when messsages are ignored in
+        states (they return None)"""
     print("Trapped: {}".format(st.msg['data']))
     if st.msg['data'] != 'baz':
+        # Will never be raised because returning True won't trap
+        # messages and returning a new state won't trap.
         raise Exception("Only trap 'baz' messages")
+
+
+class Common:
+    def __init__(self):
+        self.bars = 0
 
 
 def loop(msg_queue):
@@ -69,7 +102,8 @@ def loop(msg_queue):
         default_error_state=ErrorState,
         msg_queue=msg_queue,
         log_fn=print,
-        trap_fn=trap_msg)
+        trap_fn=trap_msg,
+        common_state=Common())
 
     # Initial kick of the state machine for setup
     fsm.tick()
