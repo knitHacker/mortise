@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-""" Example for blocking state machine that waits for correct message before
-    moving onto the next state. Also shows an example of using local state
-    values that are reset when the state is re-initialized. """
+""" Example for blocking state machine that waits for the correct messages
+    before moving onto the next state. Also shows an example of using local
+    state values that are reset when the state is re-initialized. """
 
 import queue
 import random
