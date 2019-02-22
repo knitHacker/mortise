@@ -222,7 +222,7 @@ class State:
 
             # Early exit, this is a wait condition
             if result in BLOCKING_RETURNS:
-                return
+                return result
 
             # If a State intentionally returns itself, this is a retry and
             # we should re-enter on the next tick
