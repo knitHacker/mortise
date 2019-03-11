@@ -9,6 +9,8 @@ from mortise import State
 
 
 class Ping(State):
+    TIMEOUT = 10
+
     def on_state(self, st):
         if st.msg:
             print("Ping: ", st.msg['data'])
@@ -43,7 +45,11 @@ def loop(msg_queue):
     fsm.tick()
 
     while True:
-        fsm.tick(msg_queue.get())
+        try:
+            fsm.tick(msg_queue.get())
+        except mortise.BlockedInUntimedState as err:
+            if not isinstance(err.state, Pong):
+                raise
 
 
 def msg_loop(msg_queue):

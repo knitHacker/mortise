@@ -39,6 +39,17 @@ class NoPushedStatesError(Exception):
     pass
 
 
+class NonBlockingStalled(Exception):
+    pass
+
+
+class BlockedInUntimedState(Exception):
+    def __init__(self, state):
+        super().__init__("Blocking on state without a timer: {}"
+                         .format(state_name(state)))
+        self.state = state
+
+
 class Push(object):
     def __init__(self, *args):
         self.push_states = args
@@ -477,6 +488,15 @@ class StateMachine:
     def is_finished(self):
         return self._is_finished
 
+    def start_non_blocking(self, *args, **kwargs):
+        try:
+            self.tick(self, *args, **kwargs)
+        except StateMachineComplete:
+            raise
+        raise NonBlockingStalled(
+            "Non-blocking state machine stalled in {}"
+            .format(state_name(self._current)))
+
     def tick(self, message=None):
         self._shared_state.msg = message
 
@@ -565,3 +585,6 @@ class StateMachine:
                     self._transition(next_state)
                 else:
                     raise e
+
+        if self._msg_queue.empty() and self._current.TIMEOUT is None:
+            raise BlockedInUntimedState(self._current)

@@ -33,6 +33,6 @@ def main():
         log_fn=print)
 
     # Runs forever
-    fsm.tick()
+    fsm.start_non_blocking()
 
 main()
