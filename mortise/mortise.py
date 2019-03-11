@@ -490,8 +490,10 @@ class StateMachine:
 
     def start_non_blocking(self):
         self._msg_queue.put(None)
+        # Still need while loop for getting errors pushed into queue
         while True:
             try:
+                # Still check messages for RetryLimitException
                 msg = self._msg_queue.get()
                 self.tick(msg)
             except StateMachineComplete:
