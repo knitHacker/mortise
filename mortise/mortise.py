@@ -488,14 +488,18 @@ class StateMachine:
     def is_finished(self):
         return self._is_finished
 
-    def start_non_blocking(self, *args, **kwargs):
-        try:
-            self.tick(self, *args, **kwargs)
-        except StateMachineComplete:
-            raise
-        raise NonBlockingStalled(
-            "Non-blocking state machine stalled in {}"
-            .format(state_name(self._current)))
+    def start_non_blocking(self):
+        self._msg_queue.put(None)
+        while True:
+            try:
+                msg = self._msg_queue.get()
+                self.tick(msg)
+            except StateMachineComplete:
+                raise
+            if self._msg_queue.empty():
+                raise NonBlockingStalled(
+                    "Non-blocking state machine stalled in {}"
+                    .format(state_name(self._current)))
 
     def tick(self, message=None):
         self._shared_state.msg = message
