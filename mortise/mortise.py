@@ -519,12 +519,12 @@ class StateMachine:
             #  to raise them later in the try to pass to the on_error function
             filter_exception = e
 
-        if self.is_finished:
-            raise StateMachineComplete()
-
         fsm_busy = True
         while fsm_busy:
             try:
+                if isinstance(self._current, self._final_st):
+                    self._is_finished = True
+
                 if not self._timeout_queue.empty():
                     raise self._timeout_queue.get()
 
@@ -533,12 +533,7 @@ class StateMachine:
 
                 next_state = self._current.tick(self._shared_state)
 
-                if next_state == self._final_st:
-                    # Mark ourselves complete
-                    self._is_finished = True
-                    self._transition(next_state)
-
-                elif next_state in BLOCKING_RETURNS:
+                if next_state in BLOCKING_RETURNS:
                     # If we didn't return anything at all, or we
                     # returned that we swallowed the message, we'll
                     # assume that the FSM is no longer busy and is
@@ -572,6 +567,7 @@ class StateMachine:
                             self._log_fn(str(e))
                         # Set our current state to the next state
                         self._transition(next_state)
+
                 fsm_busy = fsm_busy and self._msg_queue.empty()
             except (StateRetryLimitError, StateTimedOut) as e:
                 self._msg_queue.put(e)
@@ -589,6 +585,9 @@ class StateMachine:
                     self._transition(next_state)
                 else:
                     raise e
+
+        if self.is_finished:
+            raise StateMachineComplete()
 
         if self._msg_queue.empty() and self._current.TIMEOUT is None:
             raise BlockedInUntimedState(self._current)
