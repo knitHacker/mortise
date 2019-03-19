@@ -316,6 +316,10 @@ class StateMachine:
     trap will capture any unhandled message and can be used to raise
     exceptions or log notification messages.
 
+    The state machine will raise an error if it stops in a state that has
+    neither a timeout nor is the final state unless it is included in an
+    iterable called dwell_states.
+
     (For a visual overview of the data flow, see mortise_data_flow.png)
 
     Finally, the user MAY supply a common_state class instance. This
@@ -593,6 +597,10 @@ class StateMachine:
         if self.is_finished:
             raise StateMachineComplete()
 
+        # If the state machine hasn't finished and the current state doesn't
+        # have a timeout or isn't in one of the dwell_states passed in when
+        # creating the state machine at the end of a tick an exception is
+        # raised to indicate that the state machine is stalled.
         if (self._msg_queue.empty() and self._current.TIMEOUT is None
                 and not any([isinstance(self._current, d_state)
                              for d_state in self._dwell_states])):
