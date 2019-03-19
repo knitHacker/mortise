@@ -331,7 +331,8 @@ class StateMachine:
                  on_error_fn=None,
                  log_fn=print,
                  transition_fn=None,
-                 common_state=None):
+                 common_state=None,
+                 dwell_states=None):
 
         # We want to make sure that initial/final/default_err states
         # are descriptors, not instances
@@ -369,6 +370,7 @@ class StateMachine:
         self._trap_fn = trap_fn
 
         self._shared_state = SharedState(self, common_state)
+        self._dwell_states = dwell_states or []
 
         self.reset()
 
@@ -591,5 +593,7 @@ class StateMachine:
         if self.is_finished:
             raise StateMachineComplete()
 
-        if self._msg_queue.empty() and self._current.TIMEOUT is None:
+        if (self._msg_queue.empty() and self._current.TIMEOUT is None
+                and not any([isinstance(self._current, d_state)
+                             for d_state in self._dwell_states])):
             raise BlockedInUntimedState(self._current)

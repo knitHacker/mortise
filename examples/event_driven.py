@@ -39,17 +39,14 @@ def loop(msg_queue):
         final_state=mortise.DefaultStates.End,
         default_error_state=ErrorState,
         msg_queue=msg_queue,
-        log_fn=print)
+        log_fn=print,
+        dwell_states=[Pong])
 
     # Initial kick of the state machine for setup
     fsm.tick()
 
     while True:
-        try:
-            fsm.tick(msg_queue.get())
-        except mortise.BlockedInUntimedState as err:
-            if not isinstance(err.state, Pong):
-                raise
+        fsm.tick(msg_queue.get())
 
 
 def msg_loop(msg_queue):
