@@ -394,7 +394,7 @@ class StateMachine:
     def reset_transitions(self):
         # We store transitions and times separately since we don't
         # want slightly different times to affect the set of actual transitions
-        self._transaction_id = 0
+        self._transition_id = 0
         self._transitions = set()
         self._transition_times = collections.defaultdict(list)
 
@@ -438,9 +438,9 @@ class StateMachine:
         trans_tup = (cur_base, cur_name, next_base, next_name)
 
         self._transitions.add(trans_tup)
-        self._transition_times[trans_tup].append((self._transaction_id,
+        self._transition_times[trans_tup].append((self._transition_id,
                                                   trans_delta))
-        self._transaction_id += 1
+        self._transition_id += 1
 
         if self._log_fn:
             self._log_fn(
